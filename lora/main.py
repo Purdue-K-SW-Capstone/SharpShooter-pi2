@@ -12,13 +12,15 @@ async def accept(lora):
             package = lora.transmit()
             
             if package != None:
-                package = json.dumps(package)
+                # package = json.dumps(package)
                 await websocket.send(package)
 
 def main():
     
     print("open the LoRa")
     lora = LoRa()
+    
+    asyncio.run(accept(lora))
     
     
 

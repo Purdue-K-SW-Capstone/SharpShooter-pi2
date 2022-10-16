@@ -250,8 +250,18 @@ class sx126x:
             time.sleep(0.5)
             r_buff = self.ser.read(self.ser.inWaiting())
             
+            temp = r_buff[2:-1].decode('utf-8')
+            
+            processed = temp.split("}")
+            processed.pop()
+            processed.append("}")
+            processed = ('').join(processed)
+            
+            # print("-----packaging-----")
+            # package = json.loads(processed)
+            # print("-----packaging complete-----")                                 
+            
             print("receive message from address\033[1;32m %d node \033[0m"%((r_buff[0]<<8)+r_buff[1]),end='\r\n',flush = True)
-            print("message is "+str(r_buff[2:-1]),end='\r\n')
             
             # print the rssi
             if self.rssi:
@@ -262,6 +272,8 @@ class sx126x:
             else:
                 pass
                 #print('\x1b[2A',end='\r')
+            
+            return processed
 
     def receiveTest(self):
         
