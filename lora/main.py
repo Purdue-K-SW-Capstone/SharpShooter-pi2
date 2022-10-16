@@ -14,13 +14,30 @@ async def accept(lora):
             if package != None:
                 package = json.dumps(package)
                 await websocket.send(package)
-                
 
 def main():
     
+    print("open the LoRa")
+    lora = LoRa()
+    
+    
+
+async def acceptTest(lora):
+    async with websockets.connect("ws://127.0.0.1:5000") as websocket:
+        
+        while True:
+            
+            package = lora.transmitTest()
+            
+            if package != None:
+                package = json.dumps(package)
+                await websocket.send(package)
+
+def mainTest():
+    
     lora = LoRa()    
     
-    asyncio.run(accept(lora))
+    asyncio.run(acceptTest(lora))
     # while True:
         
         # package is dictionary(json)
@@ -37,3 +54,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # mainTest()

@@ -47,6 +47,9 @@ class LoRa:
         self.node = sx126x.sx126x(serial_num = self.serial_num, freq=self.freq, addr=self.addr, power=self.power, rssi=self.rssi)
 
     def transmit(self):
+        return self.node.receive()
+
+    def transmitTest(self):
         
         return self.node.receiveTest()
 
