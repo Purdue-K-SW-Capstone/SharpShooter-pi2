@@ -1,11 +1,17 @@
 from node_21_main import LoRa
+from dotenv import load_dotenv
+
+import os
+import json
 
 import asyncio
 import websockets
-import json
+
+load_dotenv()
+WS_URL = os.environ.get("WS_URL")
 
 async def accept(lora):
-    async with websockets.connect("ws://127.0.0.1:5000") as websocket:
+    async with websockets.connect(WS_URL) as websocket:
         
         while True:
             
