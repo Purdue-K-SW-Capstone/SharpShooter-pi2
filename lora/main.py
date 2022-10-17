@@ -31,7 +31,7 @@ def main():
     
 
 async def acceptTest(lora):
-    async with websockets.connect("ws://127.0.0.1:5000") as websocket:
+    async with websockets.connect(WS_URL) as websocket:
         
         while True:
             
@@ -61,5 +61,5 @@ def mainTest():
 
 
 if __name__ == "__main__":
-    main()
-    # mainTest()
+    # main()
+    mainTest()
