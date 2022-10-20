@@ -6,13 +6,16 @@ import * as dotenv from "dotenv";
 
 // import cookieParser from "cookie-parser";
 
-dotenv.config();
+import router from "./index-router"
+
+dotenv.config({ path: path.join(__dirname, '../.env')});
 
 const app: Application = express();
 
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
+app.use(router);
 
 
 const server = http.createServer(app);
