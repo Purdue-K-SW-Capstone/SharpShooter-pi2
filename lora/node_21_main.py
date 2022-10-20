@@ -53,9 +53,13 @@ class LoRa:
         
         return self.node.receiveTest()
 
+    def transmitImage(self):
         
+        return self.node.receiveImage()
 
-
+    def transmitBytes(self):
+        
+        return self.node.receiveBytes()
 
 
 
