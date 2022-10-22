@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 
 import os
 import json
+import time
+import struct
 
 import asyncio
 import websockets
@@ -36,13 +38,28 @@ async def acceptImage(lora):
     
         while True:
             
-            package = lora.transmitBytes()
+            packet = lora.transmitBytes()
             
-            if package != None:
-                imageBytes = imageBytes + package
+            if packet != None:
                 
-                print(imageBytes)
-                await websocket.send(package)
+                print(packet)
+            
+                preTime = (struct.unpack('>f', packet[:4]))[0]
+                
+                print(preTime)
+                                
+                curTime = round(time.time(), 3) - 1640000000
+                                        
+                span = curTime - preTime
+                print("span : " + str(span))
+                
+                span = struct.pack('>f', span)
+                
+                imageBytes = imageBytes + packet[4:]
+                
+                print(packet[4:])
+                await websocket.send(span)
+                await websocket.send(packet)
                 print(i)
                 i+=1
                 
