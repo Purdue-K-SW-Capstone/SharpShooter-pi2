@@ -31,10 +31,14 @@ wss.on("connection", (ws, req) => {
     console.log(`WS is opened! at port ${process.env.WS_PORT}`);
 
     // console.log(wss.clients);
-    ws.on('message', (data) => {
-        console.log(data.toString());
+    ws.on('message', (data: Buffer) => {
+
+        const time = data.readFloatBE();
+
+        console.log("time : " + data.readFloatBE());
+
         wss.clients.forEach(client => {
-            client.send(data.toString())
+            client.send(time);
         });
     });
 });
