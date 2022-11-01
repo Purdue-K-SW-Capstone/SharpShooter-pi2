@@ -134,3 +134,6 @@ dmypy.json
 # For Nodejs
 node_modules/
 package-lock.json
+
+# For model
+model/
