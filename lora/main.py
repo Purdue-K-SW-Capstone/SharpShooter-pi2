@@ -36,14 +36,16 @@ async def acceptImage(lora):
         i = 0
         imageBytes = bytearray()
     
-        while True:
+        noneCount = 0
+    
+        while noneCount <= 40:
             
             packet = lora.transmitBytes()
             
             if packet != None:
                 
-                print(packet)
-            
+                noneCount = 0
+                            
                 preTime = (struct.unpack('>f', packet[:4]))[0]
                 
                 print(preTime)
@@ -62,7 +64,14 @@ async def acceptImage(lora):
                 await websocket.send(packet)
                 print(i)
                 i+=1
-                
+            
+            # test code
+            
+            if packet == None:
+                time.sleep(0.5)
+                # print(noneCount)
+                noneCount+=1
+
 
 
 def mainImage():
@@ -104,6 +113,14 @@ def mainTest():
 
 
 if __name__ == "__main__":
+    
+    # while True:
+    # 계속 receive_coordinate 상태이다가.
+    
+    # 만약 tablet에서 start버튼을 누른다면
+    # receive_imageByte함수를 실행시킨다.
+    
+    
     # main()
-    mainImage()
+    # mainImage()
     # mainTest()

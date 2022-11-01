@@ -33,9 +33,12 @@ wss.on("connection", (ws, req) => {
     // console.log(wss.clients);
     ws.on('message', (data: Buffer) => {
 
-        const time = data.readFloatBE();
+        // const time = data.readFloatBE();
 
-        console.log("time : " + data.readFloatBE());
+        // console.log("time : " + data.readFloatBE());
+        
+        const time = data.toString()
+        console.log("get : " + time);
 
         wss.clients.forEach(client => {
             client.send(time);

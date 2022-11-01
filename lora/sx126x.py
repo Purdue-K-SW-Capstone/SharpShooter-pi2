@@ -317,6 +317,7 @@ class sx126x:
                 r_buff = self.ser.read(self.ser.inWaiting())
                 
                 end = time.time()
+                print("end : " + str(end))
 
                 temp = r_buff[2:-1].decode('utf-8')
 
