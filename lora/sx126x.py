@@ -379,7 +379,7 @@ class sx126x:
             
             return r_buff[2:-1]
     
-    def transmitSoundValue(self, payload):
+    def transmitType(self, payload):
         GPIO.output(self.M1,GPIO.LOW)
         GPIO.output(self.M0,GPIO.LOW)
         time.sleep(0.1)
@@ -394,7 +394,6 @@ class sx126x:
         print("payload encode")
         print(bytes([h_addr,l_addr])+payload.encode())
         time.sleep(0.1)
-
                 
     def get_channel_rssi(self):
         GPIO.output(self.M1,GPIO.LOW)

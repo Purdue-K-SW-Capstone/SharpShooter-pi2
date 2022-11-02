@@ -115,6 +115,8 @@ if __name__ == "__main__":
         # but get only odd number of packet.
         # asyncio.run(acceptImage(lora))
         isSoundDic = {"sound": 1}
+        isStartDic = {"start": 1}
 
-        lora.sendSoundValue(isSoundDic)
+        lora.sendType(isSoundDic)
     
+        
