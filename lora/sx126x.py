@@ -309,7 +309,7 @@ class sx126x:
             
             return processed
 
-    def receiveTest(self):
+    def receiveCoordinate(self):
         
         try:
             if self.ser.inWaiting() > 0:
@@ -378,6 +378,23 @@ class sx126x:
                 #print('\x1b[2A',end='\r')
             
             return r_buff[2:-1]
+    
+    def transmitSoundValue(self, payload):
+        GPIO.output(self.M1,GPIO.LOW)
+        GPIO.output(self.M0,GPIO.LOW)
+        time.sleep(0.1)
+        
+        # add the node address ,and the node of address is 65535 can konw who send messages
+        l_addr = self.addr_temp & 0xff
+        h_addr = self.addr_temp >> 8 & 0xff
+
+        self.ser.write(bytes([h_addr,l_addr])+payload.encode())
+        # if self.rssi == True:
+            # self.get_channel_rssi()
+        print("payload encode")
+        print(bytes([h_addr,l_addr])+payload.encode())
+        time.sleep(0.1)
+
                 
     def get_channel_rssi(self):
         GPIO.output(self.M1,GPIO.LOW)

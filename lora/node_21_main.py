@@ -24,6 +24,8 @@ import termios
 import tty
 from threading import Timer
 
+import json
+
 class LoRa:
     """property
 
@@ -51,7 +53,7 @@ class LoRa:
 
     def transmitTest(self):
         
-        return self.node.receiveTest()
+        return self.node.receive_coordinate()
 
     def transmitImage(self):
         
@@ -60,8 +62,31 @@ class LoRa:
     def transmitBytes(self):
         
         return self.node.receiveBytes()
+    
+    def transmitSoundValue(self, data):
+        # data should be string now.
+        self.node.send(data)
+
+    def sendSoundValue(self, isSoundDic):
+        
+        # node setting
+        self.node.addr_temp = self.node.addr
+        self.node.set(self.node.freq, self.send_to_who, self.node.power, self.node.rssi)
+        
+        payload = json.dumps(isSoundDic)
+        print("payload")
+        print(payload)
+        time.sleep(3)
+        
+        # send the payload
+        self.node.transmitSoundValue(payload)
+
+        self.node.set(self.node.freq, self.node.addr_temp, self.node.power, self.node.rssi)
 
 
+    def receiveCoordinate(self):
+        
+        return self.node.receiveCoordinate()
 
 
 

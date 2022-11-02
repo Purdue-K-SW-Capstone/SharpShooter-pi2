@@ -12,28 +12,29 @@ import websockets
 load_dotenv('/home/shooter/PycharmProjects/receiver/lora/.env')
 WS_URL = os.environ.get("WS_URL")
 
-async def accept(lora):
-    async with websockets.connect(WS_URL) as websocket:
+# async def accept(lora):
+#     async with websockets.connect(WS_URL) as websocket:
         
-        while True:
+#         while True:
             
-            package = lora.transmit()
+#             package = lora.transmit()
             
-            if package != None:
-                # package = json.dumps(package)
-                await websocket.send(package)
+#             if package != None:
+#                 # package = json.dumps(package)
+#                 await websocket.send(package)
 
-def main():
+# def main():
     
-    print("open the LoRa")
-    lora = LoRa()
+#     print("open the LoRa")
+#     lora = LoRa()
     
-    asyncio.run(accept(lora))
+#     asyncio.run(accept(lora))
 
 async def acceptImage(lora):
     async with websockets.connect(WS_URL) as websocket:
     
         i = 0
+        
         imageBytes = bytearray()
     
         noneCount = 0
@@ -82,45 +83,38 @@ def mainImage():
     asyncio.run(acceptImage(lora))
     
 
-async def acceptTest(lora):
+async def accept(lora):
     async with websockets.connect(WS_URL) as websocket:
         
         while True:
             
-            package = lora.transmitTest()
+            package = lora.receiveCoordinate()
             
             if package != None:
                 package = json.dumps(package)
                 await websocket.send(package)
 
-def mainTest():
-    
-    lora = LoRa()    
-    
-    asyncio.run(acceptTest(lora))
-    # while True:
-        
-        # package is dictionary(json)
-        # package = lora.transmit()
-            
-                
-        # if package != None:
-        #     package = json.dumps(package)
-        #     asyncio.run(accept(package))
-
-        
-
 
 
 if __name__ == "__main__":
+
+    lora = LoRa()
     
-    # while True:
-    # 계속 receive_coordinate 상태이다가.
+    while True:
+        # at ordinary times, They always ready to get the coordinate
+        # asyncio.run(accept(lora))
+        
+        # 1. sound value send ({sound: True})
+        # 2. start button value send ({start: True})
+        
+        # if sound sensor detect the gun shot
+        # sendSoundValue()
+        
+        # if tablet click the start button.
+        # capture the target image and send that to tablet.
+        # but get only odd number of packet.
+        # asyncio.run(acceptImage(lora))
+        isSoundDic = {"sound": 1}
+
+        lora.sendSoundValue(isSoundDic)
     
-    # 만약 tablet에서 start버튼을 누른다면
-    # receive_imageByte함수를 실행시킨다.
-    
-    
-    # main()
-    # mainImage()
-    # mainTest()
