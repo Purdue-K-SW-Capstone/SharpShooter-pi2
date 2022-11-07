@@ -3,8 +3,7 @@
 import RPi.GPIO as GPIO
 import serial
 import time
-
-import json
+from .util import *
 
 class sx126x:
 
@@ -388,13 +387,32 @@ class sx126x:
         l_addr = self.addr_temp & 0xff
         h_addr = self.addr_temp >> 8 & 0xff
 
+
         self.ser.write(bytes([h_addr,l_addr])+payload.encode())
         # if self.rssi == True:
             # self.get_channel_rssi()
-        print("payload encode")
-        print(bytes([h_addr,l_addr])+payload.encode())
-        time.sleep(0.1)
-                
+
+        # to communicate by half-duplex  
+        time.sleep(0.5)        
+        
+    # receive only { sound : 1 } or { start : 1 } not img
+    def receive(self):
+        if self.ser.inWaiting() > 0:
+            time.sleep(0.5)
+            r_buff = self.ser.read(self.ser.inWaiting())
+                        
+            # to remove the garbage value
+            processed = removeGarbageInJson(r_buff[2:])
+            
+            # print the rssi
+            if self.rssi:
+                print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
+                self.get_channel_rssi()
+            else:
+                pass
+            
+            return processed
+
     def get_channel_rssi(self):
         GPIO.output(self.M1,GPIO.LOW)
         GPIO.output(self.M0,GPIO.LOW)

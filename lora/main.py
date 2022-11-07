@@ -94,15 +94,29 @@ async def accept(lora):
                 package = json.dumps(package)
                 await websocket.send(package)
 
+async def main():
+    async with websockets.connect(WS_URL) as websocket:
+        
+        lora = LoRa()
+        
+        while True:
+            coordinate = lora.getPacket()
+            
+            isSoundDic = {"sound": 1}
+            isStartDic = {"start": 1}
+
+            time.sleep(5)
+            lora.sendType(isSoundDic)
 
 
 if __name__ == "__main__":
-
-    lora = LoRa()
     
-    while True:
+    # lora = LoRa()
+    asyncio.run(main())
+    # while True:
         # at ordinary times, They always ready to get the coordinate
         # asyncio.run(accept(lora))
+        # asyncio.run(main(lora))
         
         # 1. sound value send ({sound: True})
         # 2. start button value send ({start: True})
@@ -114,9 +128,6 @@ if __name__ == "__main__":
         # capture the target image and send that to tablet.
         # but get only odd number of packet.
         # asyncio.run(acceptImage(lora))
-        isSoundDic = {"sound": 1}
-        isStartDic = {"start": 1}
 
-        lora.sendType(isSoundDic)
     
         

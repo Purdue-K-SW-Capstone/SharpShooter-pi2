@@ -82,10 +82,18 @@ class LoRa:
 
         self.node.set(self.node.freq, self.node.addr_temp, self.node.power, self.node.rssi)
 
-    def receiveCoordinate(self):
+    # get only { sound : 1 } or { start : 1 } not img
+    def getPacket(self):
         
-        return self.node.receiveCoordinate()
+        processed = self.node.receive()
 
+        if processed != None:
+            result = json.loads(processed)
+            print(result)
+            
+            return result
+        
+        return {}
 
 
 
