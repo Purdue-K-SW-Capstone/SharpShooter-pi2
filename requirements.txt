@@ -47,6 +47,7 @@ pooch==1.6.0
 prompt-toolkit==3.0.32
 psutil==5.9.3
 ptyprocess==0.7.0
+PyAudio==0.2.12
 pycparser==2.21
 Pygments==2.13.0
 pyparsing==3.0.9
