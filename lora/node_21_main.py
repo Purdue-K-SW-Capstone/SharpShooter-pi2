@@ -81,11 +81,13 @@ class LoRa:
         self.node.transmitType(payload)
 
         self.node.set(self.node.freq, self.node.addr_temp, self.node.power, self.node.rssi)
-
+        
     # get only { sound : 1 } or { start : 1 } not img
     def getPacket(self):
         
         processed = self.node.receive()
+
+        print(processed)
 
         if processed != None:
             result = json.loads(processed)
@@ -95,7 +97,11 @@ class LoRa:
         
         return {}
 
-
+    def getImage(self):
+        
+        imageBytes = self.node.receiveImage()
+        
+        
 
 
 

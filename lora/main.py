@@ -98,15 +98,35 @@ async def main():
     async with websockets.connect(WS_URL) as websocket:
         
         lora = LoRa()
+        print("LoRa is opened")
         
         while True:
-            coordinate = lora.getPacket()
+            packet = lora.getPacket()
             
-            isSoundDic = {"sound": 1}
-            isStartDic = {"start": 1}
+            if packet.get("sound") == 1:
+                lora.sendType({"sound": 1})
+                
+            if packet.get("start") == 1:
+                lora.sendType({"start": 1})
 
-            time.sleep(5)
-            lora.sendType(isSoundDic)
+                # imageBytes = []
+            
+                # while True:
+                #     imageBytes += lora.getImage()
+                
+                    # if imageBytes is end:
+                    #     break;
+                # await websocket.send(imageBytes)
+                
+            if packet.get("x") != None:
+                data = json.dumps(packet)
+                await websocket.send(data)
+            
+            # isSoundDic = {"sound": 1}
+            # isStartDic = {"start": 1}
+
+            # time.sleep(1)
+            # lora.sendType(isSoundDic)
 
 
 if __name__ == "__main__":

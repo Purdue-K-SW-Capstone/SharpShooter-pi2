@@ -3,7 +3,7 @@
 import RPi.GPIO as GPIO
 import serial
 import time
-from .util import *
+import util
 
 class sx126x:
 
@@ -274,39 +274,39 @@ class sx126x:
             
             return processed
         
-    def receiveImage(self):
-        if self.ser.inWaiting() > 0:
-            time.sleep(0.5)
-            r_buff = self.ser.read(self.ser.inWaiting())
+    # def receiveImage(self):
+    #     if self.ser.inWaiting() > 0:
+    #         time.sleep(0.5)
+    #         r_buff = self.ser.read(self.ser.inWaiting())
             
-            print(r_buff[2:-1])
+    #         print(r_buff[2:-1])
             
-            temp = r_buff[2:-1].decode('utf-8')
+    #         temp = r_buff[2:-1].decode('utf-8')
             
-            print(temp)
+    #         print(temp)
             
-            processed = temp.split("}")
-            processed.pop()
-            processed.append("}")
-            processed = ('').join(processed)
+    #         processed = temp.split("}")
+    #         processed.pop()
+    #         processed.append("}")
+    #         processed = ('').join(processed)
             
-            # print("-----packaging-----")
-            # package = json.loads(processed)
-            # print("-----packaging complete-----")
+    #         # print("-----packaging-----")
+    #         # package = json.loads(processed)
+    #         # print("-----packaging complete-----")
             
-            print("receive message from address\033[1;32m %d node \033[0m"%((r_buff[0]<<8)+r_buff[1]),end='\r\n',flush = True)
+    #         print("receive message from address\033[1;32m %d node \033[0m"%((r_buff[0]<<8)+r_buff[1]),end='\r\n',flush = True)
             
-            # print the rssi
-            if self.rssi:
-                # print('\x1b[3A',end='\r')
-                print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
-                self.get_channel_rssi()
+    #         # print the rssi
+    #         if self.rssi:
+    #             # print('\x1b[3A',end='\r')
+    #             print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
+    #             self.get_channel_rssi()
                 
-            else:
-                pass
-                #print('\x1b[2A',end='\r')
+    #         else:
+    #             pass
+    #             #print('\x1b[2A',end='\r')
             
-            return processed
+    #         return processed
 
     def receiveCoordinate(self):
         
@@ -393,7 +393,7 @@ class sx126x:
             # self.get_channel_rssi()
 
         # to communicate by half-duplex  
-        time.sleep(0.5)        
+        time.sleep(0.5)
         
     # receive only { sound : 1 } or { start : 1 } not img
     def receive(self):
@@ -402,7 +402,7 @@ class sx126x:
             r_buff = self.ser.read(self.ser.inWaiting())
                         
             # to remove the garbage value
-            processed = removeGarbageInJson(r_buff[2:])
+            processed = util.removeGarbageInJson(r_buff[2:])
             
             # print the rssi
             if self.rssi:
@@ -412,6 +412,23 @@ class sx126x:
                 pass
             
             return processed
+        
+    def receiveImage(self):
+        if self.ser.inWaiting() > 0:
+            time.sleep(0.5)
+            r_buff = self.ser.read(self.ser.inWaiting())
+                        
+            # to remove the garbage value
+            imageBytes = removeGarbageInJson(r_buff[2:])
+            
+            # print the rssi
+            if self.rssi:
+                print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
+                self.get_channel_rssi()
+            else:
+                pass
+            
+            return imageBytes
 
     def get_channel_rssi(self):
         GPIO.output(self.M1,GPIO.LOW)
