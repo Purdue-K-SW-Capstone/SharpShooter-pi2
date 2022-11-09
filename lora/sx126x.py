@@ -3,7 +3,7 @@
 import RPi.GPIO as GPIO
 import serial
 import time
-import util
+from . import util
 
 class sx126x:
 
@@ -426,6 +426,7 @@ class sx126x:
             imageBytes = r_buff[4:-1]
             print("first")
             print(imageBytes)
+            print(len(r_buff))
             print("-----------")
             
             while len(imageBytes) < imageLength:
