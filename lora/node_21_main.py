@@ -87,11 +87,8 @@ class LoRa:
         
         processed = self.node.receive()
 
-        print(processed)
-
         if processed != None:
             result = json.loads(processed)
-            print(result)
             
             return result
         

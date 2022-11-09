@@ -39,17 +39,14 @@ async def main():
             # Sound detect
             # bytearray type
             sound = audio.readAudio()
-            print(sound)
+
             if sound != None:
                 soundModel.processing()
                 result = soundModel.execute()
-                print("{sound: " + str(result) + "}")
+                print("{'sound': " + str(result) + "}")
                 
                 if result == 1:
                     lora.sendType({"sound": 1})
-                
-            time.sleep(3)
-
             
             # This code is for Image transmission test
             # imageBytes = lora.getImage()
@@ -64,27 +61,26 @@ async def main():
             #     cv2.imwrite('../../test.jpg', imgArr)
                 # await websocket.send(imageBytes)
             
-            
-            # packet = lora.getPacket()
-            
-            # if packet.get("sound") == 1:
-            #     lora.sendType({"sound": 1})
+            # Receive Packet
+            packet = lora.getPacket()
                 
-            # if packet.get("start") == 1:
-            #     lora.sendType({"start": 1})
+            if packet.get("start") == 1:
+                print(packet)
+                lora.sendType({"start": 1})
 
-                # imageBytes = []
+                imageBytes = bytearray()
             
                 # while True:
                 #     imageBytes += lora.getImage()
                 
-                    # if imageBytes is end:
-                    #     break;
+                #     if imageBytes is end:
+                #         break;
                 # await websocket.send(imageBytes)
                 
-            # if packet.get("x") != None:
-            #     data = json.dumps(packet)
-            #     await websocket.send(data)
+            if packet.get("time") != None:
+                print(packet)
+                data = json.dumps(packet)
+                await websocket.send(data)
             
             # isSoundDic = {"sound": 1}
             # isStartDic = {"start": 1}

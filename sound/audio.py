@@ -47,7 +47,6 @@ class Audio:
         dataInt = struct.unpack(str(self.CHUNK) + 'h', data)
         npData = np.abs(dataInt)
         list_data = list(npData)
-        print(len(list_data))
 
         # When there's a loud noise, start recording
         if list_data[-1] > 2500:
@@ -59,7 +58,6 @@ class Audio:
                 data = self.stream.read(self.CHUNK)
                 frames += data
             
-            print(len(frames))
             print("Recording is finished.")
             # self.stream.stop_stream()
             # self.stream.close()
