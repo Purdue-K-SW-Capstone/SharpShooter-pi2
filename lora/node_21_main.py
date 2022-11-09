@@ -101,7 +101,7 @@ class LoRa:
         
         imageBytes = self.node.receiveImage()
         
-        
+        return imageBytes
 
 
 

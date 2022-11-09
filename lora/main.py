@@ -9,6 +9,9 @@ import struct
 import asyncio
 import websockets
 
+import cv2
+import numpy as np
+
 load_dotenv('/home/shooter/PycharmProjects/receiver/lora/.env')
 WS_URL = os.environ.get("WS_URL")
 
@@ -101,13 +104,26 @@ async def main():
         print("LoRa is opened")
         
         while True:
-            packet = lora.getPacket()
+            time.sleep(3)
+            imageBytes = lora.getImage()
+            print("imageBytes")
+            print(imageBytes)
+            if imageBytes != None:
+                imageNp = np.fromstring(imageBytes, np.uint8)
+                print(imageNp)
+                imgArr = cv2.imdecode(imageNp, cv2.IMREAD_COLOR)
+                print("imgArr")
+                print(imgArr)
+                cv2.imwrite('../../test.jpg', imgArr)
+                # await websocket.send(imageBytes)
             
-            if packet.get("sound") == 1:
-                lora.sendType({"sound": 1})
+            # packet = lora.getPacket()
+            
+            # if packet.get("sound") == 1:
+            #     lora.sendType({"sound": 1})
                 
-            if packet.get("start") == 1:
-                lora.sendType({"start": 1})
+            # if packet.get("start") == 1:
+            #     lora.sendType({"start": 1})
 
                 # imageBytes = []
             
@@ -118,14 +134,14 @@ async def main():
                     #     break;
                 # await websocket.send(imageBytes)
                 
-            if packet.get("x") != None:
-                data = json.dumps(packet)
-                await websocket.send(data)
+            # if packet.get("x") != None:
+            #     data = json.dumps(packet)
+            #     await websocket.send(data)
             
             # isSoundDic = {"sound": 1}
             # isStartDic = {"start": 1}
 
-            # time.sleep(1)
+            # time.sleep(2)
             # lora.sendType(isSoundDic)
 
 

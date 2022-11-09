@@ -129,6 +129,7 @@ class sx126x:
             if self.ser.inWaiting() > 0:
                 time.sleep(0.1)
                 r_buff = self.ser.read(self.ser.inWaiting())
+ 
                 if r_buff[0] == 0xC1:
                     pass
                     # print("parameters setting is :",end='')
@@ -244,37 +245,37 @@ class sx126x:
             # self.get_channel_rssi()
         time.sleep(0.1)
 
-    def receive(self):
-        if self.ser.inWaiting() > 0:
-            time.sleep(0.5)
-            r_buff = self.ser.read(self.ser.inWaiting())
+    # def receive(self):
+    #     if self.ser.inWaiting() > 0:
+    #         time.sleep(0.5)
+    #         r_buff = self.ser.read(self.ser.inWaiting())
             
-            temp = r_buff[2:-1].decode('utf-8')
+    #         temp = r_buff[2:-1].decode('utf-8')
             
-            processed = temp.split("}")
-            processed.pop()
-            processed.append("}")
-            processed = ('').join(processed)
+    #         processed = temp.split("}")
+    #         processed.pop()
+    #         processed.append("}")
+    #         processed = ('').join(processed)
             
-            # print("-----packaging-----")
-            # package = json.loads(processed)
-            # print("-----packaging complete-----")
+    #         # print("-----packaging-----")
+    #         # package = json.loads(processed)
+    #         # print("-----packaging complete-----")
             
-            print("receive message from address\033[1;32m %d node \033[0m"%((r_buff[0]<<8)+r_buff[1]),end='\r\n',flush = True)
+    #         print("receive message from address\033[1;32m %d node \033[0m"%((r_buff[0]<<8)+r_buff[1]),end='\r\n',flush = True)
             
-            # print the rssi
-            if self.rssi:
-                # print('\x1b[3A',end='\r')
-                print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
-                self.get_channel_rssi()
+    #         # print the rssi
+    #         if self.rssi:
+    #             # print('\x1b[3A',end='\r')
+    #             print("the packet rssi value: -{0}dBm".format(256-r_buff[-1:][0]))
+    #             self.get_channel_rssi()
                 
-            else:
-                pass
-                #print('\x1b[2A',end='\r')
+    #         else:
+    #             pass
+    #             #print('\x1b[2A',end='\r')
             
-            return processed
+    #         return processed
         
-    # def receiveImage(self):
+    # def receivxeImage(self):
     #     if self.ser.inWaiting() > 0:
     #         time.sleep(0.5)
     #         r_buff = self.ser.read(self.ser.inWaiting())
@@ -388,7 +389,7 @@ class sx126x:
         h_addr = self.addr_temp >> 8 & 0xff
 
 
-        self.ser.write(bytes([h_addr,l_addr])+payload.encode())
+        self.ser.write(payload.encode())
         # if self.rssi == True:
             # self.get_channel_rssi()
 
@@ -414,12 +415,27 @@ class sx126x:
             return processed
         
     def receiveImage(self):
+        
         if self.ser.inWaiting() > 0:
             time.sleep(0.5)
             r_buff = self.ser.read(self.ser.inWaiting())
-                        
-            # to remove the garbage value
-            imageBytes = removeGarbageInJson(r_buff[2:])
+            
+            # imageLength is 4 bytes
+            imageLength = int.from_bytes(r_buff[:4], 'big')
+            print("imageLength : " + str(imageLength))
+            imageBytes = r_buff[4:-1]
+            print("first")
+            print(imageBytes)
+            print("-----------")
+            
+            while len(imageBytes) < imageLength:
+                time.sleep(1)
+                if self.ser.inWaiting() > 0:
+                    time.sleep(0.5)
+                    s_buff = self.ser.read(self.ser.inWaiting())
+                    print(s_buff[:-1])
+                    imageBytes += s_buff[:-1]
+                print(str(len(imageBytes)) + " / " + str(imageLength))
             
             # print the rssi
             if self.rssi:
