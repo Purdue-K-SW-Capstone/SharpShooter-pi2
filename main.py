@@ -34,6 +34,26 @@ async def main():
         soundModel.setup()
         print("model setting is completed")
         
+        # 1. websocket.onmessage를 통해서 websocket에서 {start: 1} 이 오기를 기다린다.
+        # 2. {start : 1} 을 받으면 이미지를 전송 받고, 그 다음에 While True 문을 시작한다.
+        # 3. while문 안에서 sound감지와 
+        
+        while True:
+            data = await websocket.recv()
+            if data != None:
+                res = json.loads(data)
+                
+                if res.get("start") == 1:
+                    print(res)
+                    lora.sendType({"start": 1})
+                    
+                    imageBytes = lora.getImage()
+                    res = {"img": list(imageBytes)}
+                    print(res)
+                    package = json.dumps(res)
+                    await websocket.send(package)
+                    break
+
         while True:
             
             # Sound detect
@@ -64,18 +84,18 @@ async def main():
             # Receive Packet
             packet = lora.getPacket()
                 
-            if packet.get("start") == 1:
-                print(packet)
-                lora.sendType({"start": 1})
+            # if packet.get("start") == 1:
+            #     print(packet)
+            #     lora.sendType({"start": 1})
 
-                imageBytes = bytearray()
+            #     imageBytes = bytearray()
             
-                # while True:
-                #     imageBytes += lora.getImage()
+            #     while True:
+            #         imageBytes += lora.getImage()
                 
-                #     if imageBytes is end:
-                #         break;
-                # await websocket.send(imageBytes)
+            #         if imageBytes is end:
+            #             break;
+            #     await websocket.send(imageBytes)
                 
             if packet.get("time") != None:
                 print(packet)
