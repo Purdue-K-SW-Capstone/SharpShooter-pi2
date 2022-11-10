@@ -137,3 +137,6 @@ package-lock.json
 
 # For model
 model/
+
+# for virtual env
+test/
