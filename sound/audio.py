@@ -49,7 +49,7 @@ class Audio:
         list_data = list(npData)
 
         # When there's a loud noise, start recording
-        if list_data[-1] > 2500:
+        if list_data[-1] > 5000:
             print("Start to record the audio")
         
             frames = self.total_data

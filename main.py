@@ -97,7 +97,7 @@ async def main():
             #             break;
             #     await websocket.send(imageBytes)
                 
-            if packet.get("time") != None:
+            if packet.get("coordinate") != None:
                 print(packet)
                 data = json.dumps(packet)
                 await websocket.send(data)
