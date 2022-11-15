@@ -52,11 +52,21 @@ class Audio:
         if list_data[-1] > 10000:
             print("Start to record the audio")
         
+            largest = []
+        
             frames = self.total_data
             print(len(frames))
             for i in range(0, int(self.RATE / self.CHUNK * self.RECORD_SECONDS)):
                 data = self.stream.read(self.CHUNK)
                 frames += data
+                
+                tempData = struct.unpack(str(self.CHUNK) + 'h', data)
+                tempNpData = np.abs(tempData)
+                tempListData = list(tempNpData)
+                largest = largest + tempListData
+
+            largest.sort(reverse=True)
+            print("max amplitude : " + str(largest[0]))
             
             print("Recording is finished.")
             # self.stream.stop_stream()
