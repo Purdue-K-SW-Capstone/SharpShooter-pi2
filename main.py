@@ -15,6 +15,10 @@ import websockets
 
 import cv2
 import numpy as np
+# ## 이미지 바이트 배열 변환 로직
+from PIL import Image
+import io
+import base64
 
 load_dotenv('/home/shooter/PycharmProjects/receiver/lora/.env')
 WS_URL = os.environ.get("WS_URL")
@@ -42,20 +46,25 @@ async def main():
             data = await websocket.recv()
             if data != None:
                 res = json.loads(data)
-                
+            
                 if res.get("start") == 1:
-                    print(res)
                     lora.sendType({"start": 1})
-                    
                     imageBytes = lora.getImage()
+                    image = Image.open(io.BytesIO(imageBytes))
+                    width = image.width
+                    height = image.height
+                    print(f'width: {width}, height: {height}')
                     res = {"img": list(imageBytes)}
-                    print(res)
+                    res1 = {"size": [width,height,0]}
                     package = json.dumps(res)
+                    package1 = json.dumps(res1)
+                    print(package)
+                    print(package1)
                     await websocket.send(package)
+                    await websocket.send(package1)
                     break
 
         while True:
-            
             # Sound detect
             # bytearray type
             sound = audio.readAudio()
@@ -64,7 +73,7 @@ async def main():
                 soundModel.processing()
                 result = soundModel.execute()
                 print("{'sound': " + str(result) + "}")
-                
+
                 if result == 1:
                     lora.sendType({"sound": 1})
             
