@@ -1,4 +1,4 @@
-from lora.node_21_main import LoRa
+from lora.lora import LoRa
 
 from sound.audio import Audio
 from sound.model import SoundModel
@@ -15,14 +15,14 @@ import websockets
 
 import cv2
 import numpy as np
+from PIL import Image
+import io
 
 load_dotenv('/home/shooter/PycharmProjects/receiver/lora/.env')
 WS_URL = os.environ.get("WS_URL")
 
-
 async def main():
     async with websockets.connect(WS_URL) as websocket:
-        
         audio = Audio()
         audio.openStream()
         print("Audio is opened")
@@ -34,100 +34,78 @@ async def main():
         soundModel.setup()
         print("model setting is completed")
         
-        # 1. websocket.onmessage를 통해서 websocket에서 {start: 1} 이 오기를 기다린다.
-        # 2. {start : 1} 을 받으면 이미지를 전송 받고, 그 다음에 While True 문을 시작한다.
-        # 3. while문 안에서 sound감지와 
-        
         while True:
-            data = await websocket.recv()
-            if data != None:
-                res = json.loads(data)
+            
+            while True:
+                data = await websocket.recv()
                 
-                if res.get("start") == 1:
-                    print(res)
-                    lora.sendType({"start": 1})
+                if data != None:
+                    value = json.loads(data)
                     
-                    imageBytes = lora.getImage()
-                    res = {"img": list(imageBytes)}
-                    print(res)
-                    package = json.dumps(res)
-                    await websocket.send(package)
-                    break
+                    if value.get("start") == 1:
+                        lora.sendType({"start": 1})
+                                                
+                        imageBytes, width, height = lora.getImage()
+                        
+                        print(f"width : {width}")
+                        print(f"height : {height}")
+                        
+                        img = {"img": list(imageBytes)}
+                        size = {"size": [width, height]}
+                        
+                        package = json.dumps(img)
+                        package2 = json.dumps(size)
+                        
+                        await websocket.send(package)
+                        await websocket.send(package2)
 
-        while True:
-            
-            # Sound detect
-            # bytearray type
-            sound = audio.readAudio()
+                        break
 
-            if sound != None:
-                soundModel.processing()
-                result = soundModel.execute()
-                print("{'sound': " + str(result) + "}")
+            while True:
+                # Sound detect
+                # bytearray type
+                sound = audio.readAudio()
+                # print(123)
+                # data = await websocket.recv()
+                # try:
+                #     if data != None:
+                #         print("data : " + str(data))
+                #         value = json.loads(data)
+                        
+                #         if value.get("finish") == 1:
+                #             break
+                # except:
+                #     pass
+
+                if sound != None:
+                    soundModel.processing()
+                    result = soundModel.execute()
+                    print("{'sound': " + str(result) + "}")
+
+                    if result == 1:
+                        lora.sendType({"sound": 1})
                 
-                if result == 1:
-                    lora.sendType({"sound": 1})
-            
-            # This code is for Image transmission test
-            # imageBytes = lora.getImage()
-            # print("imageBytes")
-            # print(imageBytes)
-            # if imageBytes != None:
-            #     imageNp = np.fromstring(imageBytes, np.uint8)
-            #     print(imageNp)
-            #     imgArr = cv2.imdecode(imageNp, cv2.IMREAD_COLOR)
-            #     print("imgArr")
-            #     print(imgArr)
-            #     cv2.imwrite('../../test.jpg', imgArr)
-                # await websocket.send(imageBytes)
-            
-            # Receive Packet
-            packet = lora.getPacket()
+                # Receive Packet
+                packet = lora.getPacket()
                 
-            # if packet.get("start") == 1:
-            #     print(packet)
-            #     lora.sendType({"start": 1})
+                # when get coordinate, send coordinate to tablet.
+                if packet.get("coordinate") != None:
+                    print(packet)
+                    data = json.dumps(packet)
+                    await websocket.send(data)
+        
+        
+    # open the LoRa
+    lora = LoRa()
+    print("LoRa is opened")
 
-            #     imageBytes = bytearray()
-            
-            #     while True:
-            #         imageBytes += lora.getImage()
-                
-            #         if imageBytes is end:
-            #             break;
-            #     await websocket.send(imageBytes)
-                
-            if packet.get("coordinate") != None:
-                print(packet)
-                data = json.dumps(packet)
-                await websocket.send(data)
-            
-            # isSoundDic = {"sound": 1}
-            # isStartDic = {"start": 1}
+    lora.getImage()
 
-            # time.sleep(2)
-            # lora.sendType(isSoundDic)
-
+def test():
+    lora = LoRa()
+    print("LoRa is opened")
+    lora.getImage()
 
 if __name__ == "__main__":
-    
-    # lora = LoRa()
     asyncio.run(main())
-    # while True:
-        # at ordinary times, They always ready to get the coordinate
-        # asyncio.run(accept(lora))
-        # asyncio.run(main(lora))
-        
-        # 1. sound value send ({sound: True})
-        # 2. start button value send ({start: True})
-        
-        # if sound sensor detect the gun shot
-        # sendSoundValue()
-        
-        # if tablet click the start button.
-        # capture the target image and send that to tablet.
-        # but get only odd number of packet.
-        # asyncio.run(acceptImage(lora))
-
-    
-        
+    # test()

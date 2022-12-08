@@ -419,7 +419,7 @@ class sx126x:
         if self.ser.inWaiting() > 0:
             time.sleep(0.5)
             r_buff = self.ser.read(self.ser.inWaiting())
-            
+
             # imageLength is 4 bytes
             imageLength = int.from_bytes(r_buff[:4], 'big')
             print("imageLength : " + str(imageLength))

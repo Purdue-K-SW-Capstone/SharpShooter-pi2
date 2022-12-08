@@ -101,6 +101,7 @@ class LoRa:
             
             if imageBytes != None:
                 break
+            
         
         return imageBytes
 

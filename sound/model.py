@@ -73,7 +73,7 @@ class SoundModel:
         self.test_dataset = TestCustomDataset(self.test_img_paths, self.test_labels, self.test_transform)
         self.test_loader = DataLoader(self.test_dataset, batch_size=self.CFG['BATCH_SIZE'], shuffle=False)#, num_workers=0)
             
-        self.checkpoint = torch.load('/home/shooter/PycharmProjects/receiver/sound/model/best_model_mel_1103_base_ELU.pth', map_location=torch.device('cpu'))
+        self.checkpoint = torch.load('/home/shooter/PycharmProjects/receiver/sound/model/best_model_mel_1117_ELU_BN_Adagrad.pth', map_location=torch.device('cpu'))
         self.model = BaseModel().to(self.device)
         self.model.load_state_dict(self.checkpoint)
         
@@ -118,21 +118,25 @@ class BaseModel(torch.nn.Module):
         super(BaseModel, self).__init__()
         self.layer1 = torch.nn.Sequential(
             nn.Conv2d(3, 8, kernel_size=2, stride=1, padding=1), #cnn layer
+            nn.BatchNorm2d(8),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
         
         self.layer2 = torch.nn.Sequential(
             nn.Conv2d(8, 16, kernel_size=2, stride=1, padding=1), #cnn layer
+            nn.BatchNorm2d(16),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
         
         self.layer3 = torch.nn.Sequential(
             nn.Conv2d(16, 32, kernel_size=2, stride=1, padding=1), #cnn layer
+            nn.BatchNorm2d(32),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
         
         self.layer4 = torch.nn.Sequential(
             nn.Conv2d(32, 16, kernel_size=2, stride=1, padding=1), #cnn layer
+            nn.BatchNorm2d(16),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
         

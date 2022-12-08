@@ -98,7 +98,6 @@ if __name__ == "__main__":
         # bytearray type
         sound = audio.readAudio()
         
-        
         if sound != None:
             soundModel.processing()
             result = soundModel.execute()
