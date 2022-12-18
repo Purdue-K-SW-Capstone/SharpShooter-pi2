@@ -1,7 +1,6 @@
 import RPi.GPIO as GPIO
 import serial
 import time
-from lora.util import *
 
 # from sx126x import sx126x
 
@@ -317,70 +316,16 @@ class HSLR:
             # pass
             print("receive rssi value fail")
             # print("receive rssi value fail: ",re_temp)
-        
-    # send Image by LoRa
-    def transmitImage(self, imageBytes):
-        GPIO.output(self.M1,GPIO.LOW)
-        GPIO.output(self.M0,GPIO.LOW)
-        time.sleep(0.1)
-        
-        maxSequenceNumber = int((len(imageBytes) - 1) / self.PAYLOAD_SIZE) + 1
-
-        # send a syn packet with imageSize, width and height
-        self.transmitSyn(imageSize=5000, width=640, height=480)
-        
-        
-        bvackArray = []
-        # send image bytes (DATA Packets)
-        while self.FLAG != self.FIN:
-            # think of the best small value to use
-            time.sleep(0.5)
-            
-            i = 0
-            # re-send lost packet first
-            while len(bvackArray) != 0:
-                sequenceNumber = bvackArray.pop()
-                
-                self.transmitData(payload=imageBytes[(sequenceNumber-1)*self.PAYLOAD_SIZE:sequenceNumber*self.PAYLOAD_SIZE], sequenceNum=sequenceNumber)
-            
-                i+=1
-            
-            # send packets remaining out of 5
-            while i < 5:
-                self.transmitData(payload=imageBytes[(self.sequenceNumber-1)*self.PAYLOAD_SIZE:self.sequenceNumber*self.PACKET_SIZE], sequenceNum=self.sequenceNumber)
-                i+=1
-
-            # after sending 5 DATA packet, wait BVACK packet.
-            payload = self.receiveBvackPacket()
-            
-            # when error occrued
-            # NOTE : 고쳐야됨. 마지막 BVACK 패킷은 길이가 10이 안될수도...
-            if len(payload) != 10:
-                print("BVACK packet's length is too short")
-                exit()
-            
-            bvackArray = []
-            # check lost packets in BVACK packet
-            for i in range(0, self.BVACK_LENGTH):
-                index = int.from_bytes(self.BVACK_INDEX[self.BVACK_ELEMENT_SIZE*i:self.BVACK_ELEMENT_SIZE*(i+1)], 'big')
-                
-                if index != 0:
-                    bvackArray.append(index)
-            
-            # after sending all DATA packet, send FIN packet.
-            if maxSequenceNumber <= self.sequenceNumber:
-                self.transmitFin()
-            
+    
+    # send {sound: 1} or {start: 1} to pi1
     def transmitType(self, payload):
-        # GPIO.output(self.M1,GPIO.LOW)
-        # GPIO.output(self.M0,GPIO.LOW)
-        # time.sleep(0.1)
         
         # send b'{type: 1}'
         self.ser.write(payload.encode())
                 
         time.sleep(0.5)
-            
+
+    # Function to receive first image from pi1
     def receiveImage(self):
         while True:
             # get Syn Packet
@@ -389,7 +334,6 @@ class HSLR:
             self.maxSequenceNumber = int((self.imageSize - 1) / self.PAYLOAD_SIZE) + 1
             print("----- max sequence number : " + str(self.maxSequenceNumber))
 
-            
             # send SYN-ACK Packet
             self.transmitSYNACK()
             
@@ -403,6 +347,7 @@ class HSLR:
             
             return [imageBytes, self.imageWidth, self.imageHeight]
         
+    # receive packet from pi1 (especially coordinates)
     def receivePacket(self):
         if self.ser.inWaiting() > 0:
             time.sleep(0.5)
@@ -411,6 +356,7 @@ class HSLR:
             
             return packet
         
+    # receive SYN packet from pi1. SYN packet inform the starting point of communication
     def receiveSynPacket(self):
         while True:
             if self.ser.inWaiting() > 0:
@@ -418,11 +364,13 @@ class HSLR:
                 r_buff = self.ser.read(self.ser.inWaiting())
                 packet = r_buff[:-1]
                 
+                # check that header is correct and get payload
                 payload = self.parse(packet)
                 
                 print("Receive SYN packet")
                 print(self.FLAG)
                 
+                # if received packet is SYN, get image size, width, height
                 if self.FLAG == self.SYN:
                     self.imageSize = int.from_bytes(payload[:self.IMAGE_SIZE_INDEX_END], 'big')
                     self.imageWidth = int.from_bytes(payload[self.IMAGE_SIZE_INDEX_END:self.IMAGE_WIDTH_INDEX_END], 'big')
@@ -433,28 +381,8 @@ class HSLR:
                     print("height : " + str(self.imageHeight))
                     
                     break
-                
-            
-    def receiveBvackPacket(self):
-        while True:
-            if self.ser.inWaiting() > 0:
-                time.sleep(0.5)
-                r_buff = self.ser.read(self.ser.inWaiting())
-                packet = r_buff[:-1]
-                
-                # get bvack list of byte type
-                bvackList = self.parse(packet=packet)
-                
-                if self.FLAG == self.BVACK:
-                    print("Get BVACK packet")
-                else:
-                    print("something is wrong, can't get bvack")
-                    exit()
 
-                self.BVACK_INDEX = bvackList
-
-                return bvackList
-
+    # get DATA packet from pi1
     def receiveDataPacket(self):
         imageBytes = bytearray(self.imageSize)
         
@@ -537,6 +465,7 @@ class HSLR:
                     
         return imageBytes
                     
+    # four-way handshake
     def fourHandShake(self):
         while True:
             if self.ser.inWaiting() > 0:
@@ -614,42 +543,9 @@ class HSLR:
         elif t == 6:
             flagName = "FIN"
         
-        # print("----- here is addHeader -----")
-        # print("|         dest eui         | sequence Num |  FLAG  | Paylaod size |")
-        # print("| "+ str(self.DEST_MAC) +" |      "+str(int.from_bytes(sequenceNum, 'big'))+"       |"+" {:<7}".format(flagName)+"|      "+str(len(payload))+"      |")
-        
-        
-        # print("header 0~9 : " + str(header[0:10]))
-        # print(len(payload))
-        # # calculate checksum
-        # # add the each 16bit of the packet
-        # sum = 0
-        # for i in range(0, 10, 2):
-        #     int_val = int.from_bytes(header[i:i+2], 'big')
-        #     sum = bin(sum + int_val)[2:]
-        #     if len(sum) > 16:
-        #         sum = int(sum[1:], 2) + 1
-        #     else:
-        #         sum = int(sum, 2)
-        
-        # for i in range(0, len(payload), 2):
-        #     int_val = int.from_bytes(payload[i:i+2], 'big')
-        #     sum = bin(sum + int_val)[2:]
-        #     if len(sum) > 16:
-        #         sum = int(sum[1:], 2) + 1
-        #     else:
-        #         sum = int(sum, 2)
-        
-        # print("sum : " + str(sum))
-        
-        # checkSum = sum.to_bytes(2, 'big')
-        
-        # print("checksum : " + str(checkSum))
-                
-        # header[10:12] = checkSum
-        
         return header + payload
     
+    # calculate checksum to compare with received checksum and calculated checksum.
     def calCheckSum(self, header, payload):
         tempPacket = header + payload
         
@@ -661,11 +557,7 @@ class HSLR:
                 sum = int(sum[1:], 2) + 1
             else:
                 sum = int(sum, 2)
-            
-        
-        
-        # dataSum = sum.to_bytes(2, 'big')
-        
+                    
         # one's complement
         checkSum = bin(0b1111111111111111 - sum)[2:]
         checkSum = int(checkSum, 2)
@@ -673,7 +565,7 @@ class HSLR:
         
         return checkSum
         
-        
+    # check the checksum to compare with received checksum and calculated checksum.
     def check(self, packet):
 
         checkSum = packet[self.CHECKSUM_INDEX:self.HEADER_SIZE]
@@ -681,28 +573,6 @@ class HSLR:
         sum = 0
         
         calculatedCheckSum = self.calCheckSum(packet[:self.CHECKSUM_INDEX], packet[self.HEADER_SIZE:])
-        
-        # for i in range(0, 10, 2):
-        #     int_val = int.from_bytes(packet[i:i+2], 'big')
-        #     sum = bin(sum + int_val)[2:]
-        #     if len(sum) > 16:
-        #         sum = int(sum[1:], 2) + 1
-        #     else:
-        #         sum = int(sum, 2)            
-        
-        # for i in range(12, len(packet), 2):
-        #     int_val = int.from_bytes(packet[i:i+2], 'big')
-        #     sum = bin(sum + int_val)[2:]
-        #     if len(sum) > 16:
-        #         sum = int(sum[1:], 2) + 1
-        #     else:
-        #         sum = int(sum, 2)
-                                
-        # if checkSum is equal each ohter, return the packet
-        # if sum.to_bytes(2, 'big') == bytes(checkSum):
-        #     return True
-        # else:
-        #     return False
 
         if calculatedCheckSum == bytes(checkSum):
             return True
@@ -774,48 +644,7 @@ class HSLR:
         
         return payload
 
-    # transmit SYN packet and waiting SYNACK packet
-    def transmitSyn(self, imageSize, width, height):
-        # GPIO.output(self.M1,GPIO.LOW)
-        # GPIO.output(self.M0,GPIO.LOW)
-        # time.sleep(0.1)
-        
-        self.sequenceNumber = 0
-        
-        imageSize = imageSize.to_bytes(4, 'big')
-        width = width.to_bytes(2, 'big')
-        height = height.to_bytes(2, 'big')
-        
-        payload = imageSize + width + height
-        
-        # add Header with SYN FLAG
-        packet = self.addHeader(sequenceNum=0, flag=self.SYN, payload=payload)
-        
-        # sequenceNumber + 1
-        self.sequenceNumber+=1
-        
-        # send packet
-        self.ser.write(packet)
-        
-        time.sleep(0.5)
-        
-        # waiting SYNACK packet
-        while True:
-            if self.ser.inWaiting() > 0:
-                time.sleep(0.5)
-                r_buff = self.ser.read(self.ser.inWaiting())
-                packet = r_buff[:-1]
-                
-                payload = self.parse(packet)
-                
-                # if get SYN-ACK Packet
-                if self.FLAG == self.SYNACK:
-                    print("Get SYN-ACK Packet")
-                    break
-                else:
-                    print("something wrong")
-                    exit()
-                    
+    # transmit SYN-ACK packet to pi1
     def transmitSYNACK(self):
         
         # add Header with SYNACK FLAG
@@ -843,10 +672,8 @@ class HSLR:
         
         time.sleep(2)
 
+    # transmit ACK packet to pi1
     def transmitAck(self):
-        # GPIO.output(self.M1,GPIO.LOW)
-        # GPIO.output(self.M0,GPIO.LOW)
-        # time.sleep(0.1)
         
         # add Header with ACK FLAG
         packet = self.addHeader(sequenceNum=0, flag=self.ACK)
@@ -858,16 +685,11 @@ class HSLR:
         
         time.sleep(0.5)
     
+    # transmit BVACK packet to pi1 for checking packet loss
     def transmitBvack(self, payload):
-        # GPIO.output(self.M1,GPIO.LOW)
-        # GPIO.output(self.M0,GPIO.LOW)
-        # time.sleep(0.1)
         
         # add Header with ACK FLAG
         packet = self.addHeader(sequenceNum=0, flag=self.BVACK, payload=payload)
-    
-        # sequenceNumber + 1
-        # self.sequenceNumber+=1
         
         # send packet
         self.ser.write(packet)        
@@ -881,11 +703,9 @@ class HSLR:
         self.top = self.expectedResult[-1]
         
         time.sleep(0.5)
-        
+    
+    # transmit FIN packet to pi1
     def transmitFin(self):
-        # GPIO.output(self.M1,GPIO.LOW)
-        # GPIO.output(self.M0,GPIO.LOW)
-        # time.sleep(0.1)
         
         # add Header with ACK FLAG
         packet = self.addHeader(sequenceNum=0, flag=self.FIN)
@@ -898,215 +718,3 @@ class HSLR:
         print("Fin is sent")
         
         time.sleep(0.5)
-
-        
-    # # send Image by LoRa
-    # def transmitImage(self, imageBytes):
-    #     GPIO.output(self.M1,GPIO.LOW)
-    #     GPIO.output(self.M0,GPIO.LOW)
-    #     time.sleep(0.1)
-        
-    #     # turn integer value to byte of 4 byte type using big endian
-    #     imageLengthBytes = len(imageBytes).to_bytes(4, 'big')
-
-    #     firstPayload = imageLengthBytes + imageBytes[:self.PAYLOAD_SIZE-len(imageLengthBytes)]
-    
-    #     packet = self.addHeader(sequenceNum=1, flag=self.SYN, payload=firstPayload)
-    
-    #     self.ser.write(packet)
-    
-    #     print(firstPayload)
-    #     print(str(len(firstPayload)) + " / " + str(len(len(imageBytes))))
-        
-    #     for i in range(self.PAYLOAD_SIZE-len(imageLengthBytes), len(imageBytes), self.PAYLOAD_SIZE):
-    #         time.sleep(2)
-            
-    #         packet = self.addHeader(sequenceNum=int(i+len(imageLengthBytes)/self.PAYLOAD_SIZE)+1, flag=self.DATA, payload=imageBytes[i:i+self.PAYLOAD_SIZE])
-    #         self.ser.write(packet)
-    #         print(imageBytes[i:i+self.PAYLOAD_SIZE])
-    #         print(str(i+self.PAYLOAD_SIZE) + " / " + str(len(imageBytes)))
-
-
-    # def receiveImage(self):
-    #     if self.ser.inWaiting() > 0:
-    #         time.sleep(0.5)
-    #         r_buff = self.ser.read(self.ser.inWaiting())
-    #         packet = r_buff[:-1]
-
-    #         print(packet)
-    #         # check Checksum
-    #         packet = self.check(packet)
-            
-    #         payload = bytearray()
-    #         imageBytes = bytearray()
-    #         imageLength = 0
-            
-    #         # if packet is not None, get first Packet
-    #         if packet != None:
-    #             payload = packet[self.HEADER_SIZE:]
-    #             # get the image size from first packet
-    #             imageLength = int.from_bytes(payload[:4])
-    #             print("imageLength : " + str(imageLength))
-    #             imageBytes += payload
-        
-    #         # get other packets
-    #         while (len(packet) < 240) or (len(imageBytes) < imageLength):
-    #             # time.sleep(0.5)
-    #             if self.ser.inWaiting() > 0:
-    #                 time.sleep(0.5)
-    #                 packet = self.ser.read(self.ser.inWaiting())[:-1]
-                    
-    #                 # check Checksum
-    #                 packet = self.check(packet)
-                    
-    #                 # if packet is strange, continue
-    #                 if packet == None:
-    #                     print("add BVACK")
-    #                     continue
-                    
-    #                 payload = packet[self.HEADER_SIZE:]
-    #                 print(payload)
-    #                 imageBytes += payload
-                    
-    #                 print(str(len(imageBytes)) + " / " + str(imageLength))
-            
-    #         return imageBytes
-                
-        
-    
-    # # add header to payload    
-    # def addHeader(self, sequenceNum, flag, payload):
-    #     if len(payload) > 228:
-    #        print("payload size is over")
-    #        exit()
-        
-    #     header = bytearray(12)
-        
-    #     # change int to byte
-    #     sequenceNum = sequenceNum.to_bytes(2, 'big')
-    #     flag = flag.to_bytes(1, 'big')
-    #     payloadSize = len(payload).to_bytes(1, 'big')
-        
-    #     header[0:6] = self.DEST_MAC
-    #     header[6:8] = sequenceNum
-    #     header[8:9] = flag
-    #     header[9:10] = payloadSize
-        
-    #     checkSum = self.calCheckSum(header[:10], payload)
-        
-    #     header[10:12] = checkSum
-        
-    #     # print("header 0~9 : " + str(header[0:10]))
-    #     # print(len(payload))
-    #     # # calculate checksum
-    #     # # add the each 16bit of the packet
-    #     # sum = 0
-    #     # for i in range(0, 10, 2):
-    #     #     int_val = int.from_bytes(header[i:i+2], 'big')
-    #     #     sum = bin(sum + int_val)[2:]
-    #     #     if len(sum) > 16:
-    #     #         sum = int(sum[1:], 2) + 1
-    #     #     else:
-    #     #         sum = int(sum, 2)
-        
-    #     # for i in range(0, len(payload), 2):
-    #     #     int_val = int.from_bytes(payload[i:i+2], 'big')
-    #     #     sum = bin(sum + int_val)[2:]
-    #     #     if len(sum) > 16:
-    #     #         sum = int(sum[1:], 2) + 1
-    #     #     else:
-    #     #         sum = int(sum, 2)
-        
-    #     # print("sum : " + str(sum))
-        
-    #     # checkSum = sum.to_bytes(2, 'big')
-        
-    #     # print("checksum : " + str(checkSum))
-                
-    #     # header[10:12] = checkSum
-        
-    #     return header + payload
-    
-    # def calCheckSum(self, header, payload):
-    #     tempPacket = header + payload
-        
-    #     sum = 0
-    #     for i in range(0, len(tempPacket), 2):
-    #         int_val = int.from_bytes(payload[i:i+2], 'big')
-    #         sum = bin(sum + int_val)[2:]
-    #         if len(sum) > 16:
-    #             sum = int(sum[1:], 2) + 1
-    #         else:
-    #             sum = int(sum, 2)
-            
-    #     checkSum = sum.to_bytes(2, 'big')
-        
-    #     return checkSum
-        
-        
-    # def check(self, packet):
-
-    #     checkSum = packet[10:12]
-
-    #     sum = 0
-        
-    #     calculatedCheckSum = self.calCheckSum(packet[:10], packet[self.HEADER_SIZE:])
-        
-    #     # for i in range(0, 10, 2):
-    #     #     int_val = int.from_bytes(packet[i:i+2], 'big')
-    #     #     sum = bin(sum + int_val)[2:]
-    #     #     if len(sum) > 16:
-    #     #         sum = int(sum[1:], 2) + 1
-    #     #     else:
-    #     #         sum = int(sum, 2)            
-        
-    #     # for i in range(12, len(packet), 2):
-    #     #     int_val = int.from_bytes(packet[i:i+2], 'big')
-    #     #     sum = bin(sum + int_val)[2:]
-    #     #     if len(sum) > 16:
-    #     #         sum = int(sum[1:], 2) + 1
-    #     #     else:
-    #     #         sum = int(sum, 2)
-                                
-    #     # if checkSum is equal each ohter, return the packet
-    #     # if sum.to_bytes(2, 'big') == bytes(checkSum):
-    #     #     return True
-    #     # else:
-    #     #     return False
-
-    #     if calculatedCheckSum == bytes(checkSum):
-    #         return True
-    #     else:
-    #         return False
-
-
-    # # check an integrity and remove header of the packet
-    # def parse(self, packet):
-        
-    #     # check DEST EUI
-    #     destEUI = packet[0:6]
-    #     if destEUI != self.DEST_MAC:
-    #         print("destEUI is incorrect")
-    #         return []
-        
-    #     # check sequence number
-    #     # 시퀀스 넘버를 BVACK 패킷에 넣는다.
-        
-    #     # check flag
-    #     # 플래그 값에 따른 처리
-        
-    #     # check payload size
-    #     payloadSize = int.from_bytes(packet[9:10], 'big')
-    #     if len(packet[self.HEADER_SIZE:]) != payloadSize:
-    #         print("length is incorrect")
-    #         return []
-                    
-    #     # check CheckSum
-    #     result = self.check(packet)
-    #     if result == False:
-    #         return []
-        
-    #     payload = packet[self.HEADER_SIZE:]
-        
-    #     return payload
-

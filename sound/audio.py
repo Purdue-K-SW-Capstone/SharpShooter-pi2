@@ -23,6 +23,7 @@ class Audio:
         
         self.total_data = bytearray()
 
+    # open the Microphone
     def openStream(self):
         
         # open the audio data stream
@@ -69,8 +70,6 @@ class Audio:
             print("max amplitude : " + str(largest[0]))
             
             print("Recording is finished.")
-            # self.stream.stop_stream()
-            # self.stream.close()
             
             # save code
             wf = wave.open(self.WAVE_FILE_PATH, 'wb')

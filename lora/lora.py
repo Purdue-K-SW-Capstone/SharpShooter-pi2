@@ -16,29 +16,14 @@ class LoRa:
         
         self.node = HSLR(serial_num=self.SERIAL_NUMBER, freq=self.FREQUENCY, addr=self.ADDRESS, power=self.POWER, rssi=self.RSSI)
         
-    def sendImage(self):
-        imageBytes = bytearray()
-        imageBytes += b'\x01\x02\x03\x04\x05'
-        
-        print(imageBytes)
-        
-        # node setting
-        self.node.addr_temp = self.node.ADDRESS
-        self.node.set(self.node.FREQUENCY, self.SEND_TO_WHO, self.node.POWER, self.node.RSSI)
-                
-        # send the imageBytes
-        self.node.transmitImage(imageBytes)
-        
-        self.node.set(self.node.FREQUENCY, self.node.addr_temp, self.node.POWER, self.node.RSSI)
-        
-        time.sleep(0.5)
-        
+    # get first image with width and height from pi1
     def getImage(self):
         
         imageBytes, width, height = self.node.receiveImage()
         
         return [imageBytes, width, height]
     
+    # send packet to inform that user clicks start button and sound is detected to pi1
     def sendType(self, typeDic):
         # node setting 
         self.node.addr_temp = self.node.ADDRESS
@@ -55,6 +40,7 @@ class LoRa:
         
         time.sleep(0.5)
 
+    # get packet from pi1
     def getPacket(self):
         
         processed = self.node.receivePacket()
