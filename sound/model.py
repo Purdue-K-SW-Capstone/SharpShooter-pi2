@@ -24,8 +24,8 @@ from albumentations.pytorch.transforms import ToTensorV2
 #import seaborn as sns
 
 #torch.nn = torch neural network
-#torchvision - customize dataset 만들기 위한 용도
-#librosa - sound data 전처리용
+#torchvision - for customized dataset creating
+#librosa - for sound data pre-processing
 
 # get curruent directory path
 dirname = os.getcwd()
@@ -49,8 +49,7 @@ class SoundModel:
             AT.AmplitudeToDB()
         )
         
-    # 초기 시드를 미리 지정 (랜덤 시드 지정)
-    # 같은 변수와 같은 하이퍼 파라미터를 썼을 때 동일한 결과를 유지시키기 위해
+    # Fixed random seed to keep the same result when using the same variable and the same hyperparameter.
     def seed_everything(self, seed):
         random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
@@ -60,25 +59,25 @@ class SoundModel:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = True
 
-    # 파일이름 모아놓은 csv파일이 있는데, 그곳에서 이름과 레이블을 따오기 위한 함수
-    # infer = True면 테스트할 때 사용하는 것
+    # Function to get the name and label from CSV file
+    # If infer = True, it is used in the model 
     def get_data(self, df, infer=False):
         if infer:
             return df['png_name'].values
         return df['png_name'].values, df['gunsound'].values
 
     def setup(self):
-        self.seed_everything(self.CFG['SEED']) # Seed 고정
+        self.seed_everything(self.CFG['SEED']) # Seed Fix
 
-        ## filename, gunsound 여부(총이면 1, 아니면 0)
+        # filename and whether it is gunsound or not (1 if gun, 0 otherwise)
         self.test_df = pd.DataFrame([[self.sound, 1]], columns=['png_name', 'gunsound'])
         
         self.test_img_paths, self.test_labels = self.get_data(self.test_df)
         
-        # data augmentation 기법 중 하나
+        # data augmentation
         self.test_transform = A.Compose([ToTensorV2(p=1.0)])
         
-        # DataLoader : test dataset을 모델에 올리는 함수
+        # A function to load the test dataset into the model
         self.test_dataset = TestCustomDataset(self.test_img_paths, self.test_labels, self.test_transform)
         self.test_loader = DataLoader(self.test_dataset, batch_size=self.CFG['BATCH_SIZE'], shuffle=False)#, num_workers=0)
             
@@ -86,13 +85,12 @@ class SoundModel:
         self.model = BaseModel().to(self.device)
         self.model.load_state_dict(self.checkpoint)
         
-    # 모델 돌리는 함수
-    # test_loader : test data를 로딩
+    # test_loader : Laod the test data
     def predict(self, model, test_loader, device):
-        # 모델 평가할거야
+        # evaluate the model
         model.eval()
         model_pred = []
-        # 파라미터 업데이트 안할거야
+        # no parameter update
         with torch.no_grad():
             for img, label in tqdm(iter(test_loader)):
                 img, label = img.float().to(device), label.to(device)
@@ -124,62 +122,64 @@ class SoundModel:
         plt.close('all')
         
 
-# 모델의 구조를 표현
+# Model architecture 
 class BaseModel(torch.nn.Module):
     def __init__(self):
         super(BaseModel, self).__init__()
+        # layer 1
         self.layer1 = torch.nn.Sequential(
             nn.Conv2d(3, 8, kernel_size=2, stride=1, padding=1), #cnn layer
             nn.BatchNorm2d(8),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
-        
+        # layer 2
         self.layer2 = torch.nn.Sequential(
             nn.Conv2d(8, 16, kernel_size=2, stride=1, padding=1), #cnn layer
             nn.BatchNorm2d(16),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
-        
+        # layer 3
         self.layer3 = torch.nn.Sequential(
             nn.Conv2d(16, 32, kernel_size=2, stride=1, padding=1), #cnn layer
             nn.BatchNorm2d(32),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
         
+        # layer 4
         self.layer4 = torch.nn.Sequential(
             nn.Conv2d(32, 16, kernel_size=2, stride=1, padding=1), #cnn layer
             nn.BatchNorm2d(16),
             nn.ELU(), #activation function
             nn.MaxPool2d(kernel_size=2, stride=2)) #pooling layer
         
-        # fully connetec layer : 완전 연결된 계층
-        # 앞의 layer들을 2개의 class로 분류할 수 있게 끔.
+        # fully connetec layer
         self.fc_layer = nn.Sequential( 
             nn.Linear(3136, 2) #fully connected layer(ouput layer)
         )    
     
-    # 계산함수
+    # Calculation function
     def forward(self, x):
         
-        x = self.layer1(x) #1층
+        x = self.layer1(x) # layer 1
 
         #print(1, x.shape)
-        x = self.layer2(x) #2층
+        x = self.layer2(x) # layer 2
          
         #print(2, x.shape)
-        x = self.layer3(x) #3층
+        x = self.layer3(x) # layer 3
         
         #print(3, x.shape)
-        x = self.layer4(x) #4층
+        x = self.layer4(x) # layer 4
         
         #print(4, x.shape)
-        x = torch.flatten(x, start_dim=1) # N차원 배열 -> 1차원 배열
+        x = torch.flatten(x, start_dim=1) # N-demmentional array to one dementional array
         
         #print('flatten', x.shape)
 
         out = self.fc_layer(x)
         return out
-
+    
+# Custom dataset
 class TestCustomDataset(Dataset):
     def __init__(self, img_paths, labels, transforms=None):
         self.img_paths = img_paths
