@@ -1,17 +1,17 @@
 import os
 import sys
 import random
-#import glob
 import imageio
 import torch
 import torch.nn as nn
 from tqdm.notebook import tqdm
 import torch.nn.functional as F
+import torchaudio
+import torchaudio.transforms as AT
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.pyplot as plt
-#import IPython.display as display
 import librosa
 import librosa.display
 import pandas as pd
@@ -27,10 +27,12 @@ from albumentations.pytorch.transforms import ToTensorV2
 #torchvision - customize dataset 만들기 위한 용도
 #librosa - sound data 전처리용
 
+# get curruent directory path
+dirname = os.getcwd()
 class SoundModel:
     
     def __init__(self):
-        self.WAVE_PATH = '/home/shooter/input.wav'
+        self.WAVE_PATH = dirname+'/input.wav'
         self.device = torch.device('cpu')
         self.CFG = {
             'EPOCHS':50,
@@ -38,8 +40,15 @@ class SoundModel:
             'BATCH_SIZE':64,
             'SEED':2022
         }
-        self.sound = "/home/shooter/gunsound.png"
+        self.sound = dirname+"/gunsound.png"
 
+        self.spectrogram = nn.Sequential(
+            AT.Spectrogram(n_fft=1024,
+                           win_length=1024,
+                           hop_length=512),
+            AT.AmplitudeToDB()
+        )
+        
     # 초기 시드를 미리 지정 (랜덤 시드 지정)
     # 같은 변수와 같은 하이퍼 파라미터를 썼을 때 동일한 결과를 유지시키기 위해
     def seed_everything(self, seed):
@@ -73,7 +82,7 @@ class SoundModel:
         self.test_dataset = TestCustomDataset(self.test_img_paths, self.test_labels, self.test_transform)
         self.test_loader = DataLoader(self.test_dataset, batch_size=self.CFG['BATCH_SIZE'], shuffle=False)#, num_workers=0)
             
-        self.checkpoint = torch.load('/home/shooter/PycharmProjects/receiver/sound/model/best_model_mel_1117_ELU_BN_Adagrad.pth', map_location=torch.device('cpu'))
+        self.checkpoint = torch.load(dirname+'/SharpShooter-pi2/sound/model/best_model_1209_Powerspectro.pth', map_location=torch.device('cpu'))
         self.model = BaseModel().to(self.device)
         self.model.load_state_dict(self.checkpoint)
         
@@ -100,15 +109,18 @@ class SoundModel:
         return preds[0]
     
     def processing(self):
-        samples, sample_rate = librosa.load(self.WAVE_PATH)
+        # samples, sample_rate = librosa.load(self.WAVE_PATH)
+        samples, sample_rate = torchaudio.load(self.WAVE_PATH)
         fig = plt.figure(figsize=[0.72,0.72])
         ax = fig.add_subplot(111)
         ax.axes.get_xaxis().set_visible(False)
         ax.axes.get_yaxis().set_visible(False)
         ax.set_frame_on(False)
-        S = librosa.feature.melspectrogram(y=samples, sr=sample_rate)
-        librosa.display.specshow(librosa.power_to_db(S, ref=np.max))
-        plt.savefig('/home/shooter/gunsound.png', dpi=400, bbox_inches='tight',pad_inches=0)
+        # S = librosa.feature.melspectrogram(y=samples, sr=sample_rate)
+        # librosa.display.specshow(librosa.power_to_db(S, ref=np.max))
+        spec = self.spectrogram(samples)
+        ax.pcolor(spec[0])
+        plt.savefig(dirname+'/gunsound.png', dpi=400, bbox_inches='tight',pad_inches=0)
         plt.close('all')
         
 

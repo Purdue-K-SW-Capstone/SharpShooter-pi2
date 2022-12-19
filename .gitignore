@@ -135,8 +135,5 @@ dmypy.json
 node_modules/
 package-lock.json
 
-# For model
-model/
-
 # for virtual env
 test/
